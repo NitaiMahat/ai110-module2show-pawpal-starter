@@ -7,12 +7,23 @@
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
-- Core user actions:
+Initial design includes four main classes:
+
+- `Owner`: stores owner identity, contact, preferences, and availability; methods to update preferences/availability and provide summaries.
+- `Pet`: stores individual pet profile, species, age, health notes, and care requirements; methods to update health notes and indicate task needs.
+- `Task`: stores pet care tasks with identifiers, duration, priority, preferred time, and status; methods to complete, reschedule, and revise task details.
+- `Scheduler`: orchestrates task assignment for a day, checks constraints, evaluates ordering, and returns today’s task list.
+
+Core user actions:
   - Add and manage pets and owner details (basic owner + pet info entry).
   - Add and edit care tasks, including duration and priority (walks, feeding, meds, grooming, enrichment).
   - Generate and view a daily schedule that respects available time and priorities, with explanatory reasoning.
 
 **b. Design changes**
+
+- I started with the four classes above and initially kept responsibilities minimal for clarity.
+- After reviewing, I may add explicit relationships (e.g., `Owner` has a list of `Pet`, `Pet` has list of `Task`) during full implementation to keep data flow explicit.
+- This is a planned refinement once scheduling behavior is implemented and tested.
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
