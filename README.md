@@ -6,11 +6,23 @@ A Streamlit app that helps a pet owner build and manage a smart daily care plan 
 
 ## 📸 Demo
 
-<a href="screenshots/Screenshot%202026-03-29%20183257.png" target="_blank">
-  <img src="screenshots/Screenshot%202026-03-29%20183257.png" alt="PawPal+ running in the browser showing the task table, daily schedule, sort/filter controls, and conflict warnings" width="800">
+<a href="screenshots/Screenshot%20(534).png" target="_blank">
+  <img src="screenshots/Screenshot%20(534).png" alt="PawPal+ Owner and Pet setup screen" width="800">
 </a>
 
-*PawPal+ running at `localhost:8501` — owner and pet set up, a Morning walk task added, schedule generated with sort/filter controls visible.*
+*Set up owner profile and add pets with species, breed, and age.*
+
+<a href="screenshots/Screenshot%20(535).png" target="_blank">
+  <img src="screenshots/Screenshot%20(535).png" alt="PawPal+ Add task interface showing priority slider and recurrence options" width="800">
+</a>
+
+*Add care tasks with duration, priority, and recurrence (once, daily, or weekly).*
+
+<a href="screenshots/Screenshot%202026-03-29%20183257.png" target="_blank">
+  <img src="screenshots/Screenshot%202026-03-29%20183257.png" alt="PawPal+ Daily Schedule with sort, filter, and conflict detection" width="800">
+</a>
+
+*View the daily schedule with sorting, filtering, and automatic conflict detection.*
 
 ---
 
