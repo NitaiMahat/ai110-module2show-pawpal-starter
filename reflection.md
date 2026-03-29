@@ -39,8 +39,9 @@ Core user actions:
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+The conflict detector compares tasks by exact `preferred_time` equality — two tasks at `09:00` trigger a warning, but a 45-minute task starting at `09:00` and a 10-minute task starting at `09:30` do not, even though they overlap in real time.
+
+This is a deliberate simplification. Computing true overlap requires a start time *and* an end time (start + duration) for every task, then checking each pair of intervals — an O(n²) comparison. For a typical day with fewer than 20 tasks the performance difference is negligible, but the exact-match approach is far easier to read, test, and explain to a non-technical user. The tradeoff is acceptable here because preferred times are usually set to round hours and the scheduler's primary job is to surface obvious double-bookings, not to act as a calendar solver.
 
 ---
 

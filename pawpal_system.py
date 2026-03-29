@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, time, date, timedelta
 from typing import List, Optional, Dict
@@ -208,6 +209,29 @@ class Scheduler:
         """Return True if any two assigned tasks share the same preferred time."""
         times = [task.preferred_time for task in self.assigned_tasks if task.preferred_time is not None]
         return len(times) != len(set(times))
+
+    def get_conflict_warnings(self) -> List[str]:
+        """Return a list of human-readable warning strings for every time conflict.
+
+        Groups tasks by preferred_time using a defaultdict, then emits one warning
+        per slot that holds more than one task.  Tasks without a preferred_time are
+        ignored.  Returns an empty list when there are no conflicts, so callers can
+        always check `if warnings` without crashing.
+        """
+        # Step 4: lightweight strategy — bucket tasks by time, warn per busy slot
+        buckets: Dict[time, List[Task]] = defaultdict(list)
+        for task in self.assigned_tasks:
+            if task.preferred_time is not None:
+                buckets[task.preferred_time].append(task)
+
+        warnings: List[str] = []
+        for slot, tasks in buckets.items():
+            if len(tasks) > 1:
+                details = ", ".join(f"{t.pet_name}:{t.task_type}" for t in tasks)
+                warnings.append(
+                    f"WARNING: conflict at {slot.strftime('%H:%M')} -- {details}"
+                )
+        return warnings
 
     def get_todays_tasks(self) -> List[Task]:
         """Return the list of tasks assigned for today's schedule."""

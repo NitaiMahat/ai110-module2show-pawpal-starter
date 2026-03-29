@@ -45,10 +45,17 @@ def main():
         duration_minutes=20, priority=3, preferred_time=time(11, 0),
         frequency='once',
     )
+    # Step 4: deliberately clashes with task3 (Mittens: Medicine at 09:00)
+    task5 = Task(
+        task_id='t5', pet_name='Buddy', task_type='Vet check',
+        duration_minutes=45, priority=9, preferred_time=time(9, 0),
+        frequency='once',
+    )
 
     pet1.add_task(task1)
     pet1.add_task(task2)
     pet1.add_task(task4)
+    pet1.add_task(task5)
     pet2.add_task(task3)
 
     owner.add_pet(pet1)
@@ -79,6 +86,15 @@ def main():
     print("\n-- Marking t4 (Buddy: Grooming, once) as complete --")
     new_task = scheduler.mark_task_complete('t4', owner)
     print(f"  No recurrence spawned: {new_task is None}")
+
+    # Step 4: conflict detection before marking anything done
+    print("\n-- Conflict detection --")
+    warnings = scheduler.get_conflict_warnings()
+    if warnings:
+        for w in warnings:
+            print(f"  {w}")
+    else:
+        print("  No conflicts detected.")
 
     # Rebuild plan to show recurring tasks now queued
     scheduler.generate_plan(owner)
