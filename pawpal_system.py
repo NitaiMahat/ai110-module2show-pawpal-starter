@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, time
+from datetime import datetime, time, date, timedelta
 from typing import List, Optional, Dict
 
 
@@ -12,10 +12,34 @@ class Task:
     priority: int
     preferred_time: Optional[time] = None
     status: str = "pending"
+    frequency: str = "once"          # "once" | "daily" | "weekly"
+    due_date: Optional[date] = None  # the calendar date this task is due
 
     def mark_done(self) -> None:
         """Mark this task as completed by setting its status to 'done'."""
         self.status = "done"
+
+    def next_occurrence(self, counter: int) -> Optional["Task"]:
+        """Return a new Task for the next occurrence if this task is recurring, else None.
+
+        Uses timedelta to advance due_date by 1 day (daily) or 7 days (weekly).
+        The caller is responsible for adding the returned task to the appropriate pet.
+        """
+        if self.frequency == "once":
+            return None
+        delta = timedelta(days=1 if self.frequency == "daily" else 7)
+        next_due = (self.due_date + delta) if self.due_date else (date.today() + delta)
+        return Task(
+            task_id=f"{self.task_id}_r{counter}",
+            pet_name=self.pet_name,
+            task_type=self.task_type,
+            duration_minutes=self.duration_minutes,
+            priority=self.priority,
+            preferred_time=self.preferred_time,
+            status="pending",
+            frequency=self.frequency,
+            due_date=next_due,
+        )
 
     def reschedule(self, new_time: time) -> None:
         """Update the preferred time for this task."""
@@ -98,6 +122,7 @@ class Scheduler:
         self.assigned_tasks: List[Task] = []
         self.constraints: Dict[str, str] = {}
         self.plan_description: Optional[str] = None
+        self._recur_counter: int = 0  # used to generate unique IDs for recurring tasks
 
     def generate_plan(self, owner: Owner) -> List[Task]:
         """Build and return a prioritised task plan for the owner's pending tasks."""
@@ -110,6 +135,68 @@ class Scheduler:
         self.plan_description = f"Generated plan for {self.date.date()} with {len(tasks)} tasks."
         return self.assigned_tasks
 
+    # ── Step 2: Sorting ───────────────────────────────────────────────────────
+
+    def sort_by_time(self) -> List[Task]:
+        """Return assigned tasks sorted ascending by preferred_time.
+
+        Tasks without a preferred_time are placed at the end (treated as 23:59).
+        Uses sorted() with a lambda key so the original list order is preserved
+        as a stable tiebreaker.
+        """
+        return sorted(
+            self.assigned_tasks,
+            key=lambda t: t.preferred_time or time(23, 59),
+        )
+
+    # ── Step 2: Filtering ─────────────────────────────────────────────────────
+
+    def filter_tasks(
+        self,
+        pet_name: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[Task]:
+        """Return a filtered subset of assigned tasks.
+
+        Pass pet_name to keep only that pet's tasks.
+        Pass status (e.g. 'pending', 'done') to keep only tasks in that state.
+        Both filters can be combined; omitting a parameter skips that filter.
+        """
+        result = self.assigned_tasks
+        if pet_name is not None:
+            result = [t for t in result if t.pet_name == pet_name]
+        if status is not None:
+            result = [t for t in result if t.status == status]
+        return result
+
+    # ── Step 3: Recurring task completion ────────────────────────────────────
+
+    def mark_task_complete(self, task_id: str, owner: Owner) -> Optional[Task]:
+        """Mark a task done and, if it is recurring, spawn the next occurrence.
+
+        Finds the task by ID in assigned_tasks, calls mark_done(), then calls
+        next_occurrence() to build the follow-up task.  The new task is added
+        to the matching pet via pet.add_task() so it persists in the owner's
+        data for the next generate_plan() call.
+
+        Returns the newly created Task if one was spawned, otherwise None.
+        """
+        target = next((t for t in self.assigned_tasks if t.task_id == task_id), None)
+        if target is None:
+            return None
+
+        target.mark_done()
+        self._recur_counter += 1
+        new_task = target.next_occurrence(self._recur_counter)
+
+        if new_task is not None:
+            for pet in owner.pets:
+                if pet.name == target.pet_name:
+                    pet.add_task(new_task)
+                    break
+
+        return new_task
+
     def score_task_order(self) -> float:
         """Return the average priority score of the current assigned task list."""
         if not self.assigned_tasks:
@@ -119,7 +206,6 @@ class Scheduler:
 
     def conflict_check(self) -> bool:
         """Return True if any two assigned tasks share the same preferred time."""
-        # Simple check: overlapping preferred_time with time-sensitive tasks
         times = [task.preferred_time for task in self.assigned_tasks if task.preferred_time is not None]
         return len(times) != len(set(times))
 
